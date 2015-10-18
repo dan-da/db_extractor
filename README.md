@@ -56,8 +56,8 @@ $dao_user->save( $dto_user );
 $dto_user->email = 'santaclaus@northpole.com';
 $dao_user->save( $dto_user );
 
-// 3. Query the record.
-$dto_user = $dao_user->getByPk( $id );
+// 3. Query the record by primary key.
+$dto_user = $dao_user->getByPk( $dto_user->user_id );
 print_r( $dto_user );
 
 // 4. Delete. 
