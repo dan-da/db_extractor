@@ -1,0 +1,57 @@
+Note: these instructions assume that:
+ - the postgresql installation is running on your local machine
+ - you are running postgresql >= 9.0
+ - you are the postgres user, or postgres is configured to allow your
+   current user to login as the postgres user ( via trust or ident ).
+
+
+To create linkwarz database the first time:
+
+         1) ensure plpgsql language is installed in posgres.
+         
+            su - postgres
+            createlang plpgsql template1
+            
+         2) Create linkwarz DB
+         
+            // new, easy method:
+            ./create_db.sh
+
+            // old, by hand method:
+            psql -U postgres template1
+            
+            # create database linkwarz with encoding='unicode';
+            # \c linkwarz
+            # begin;
+            # \i everything.sql
+            # commit;
+            # ^D
+
+
+To recreate the database.  For example, if schema has changed. ( will wipe all user data )
+
+        ./recreate_db.sh
+
+
+
+Various bits/notes for anyone maintaining the database:
+
+The schema.sql is/was/should be generated with this command:
+
+            /usr/local/pgsql/bin/pg_dump -U postgres -s -c linkwarz > schema.sql
+
+
+It can be restored (into a freshly created database named linkwarz) via:
+
+            psql -U postgres linkwarz < schema.sql
+
+init_data.sql is trickier to create.  It consists of all the static data that should be present
+in the DB, and was created by hand.  handle with care.
+
+The general methodology used during development regarding SQL tables is:
+
+1) full schema and init_data are maintained in this directory.
+2) functions and triggers are maintained in their respective sub-directories.
+
+3) ** IMPORTANT ** All changes are made first in these files, then in the database.
+   This ensures that CVS is kept up-to-date with the DB changes.
