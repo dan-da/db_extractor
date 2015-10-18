@@ -49,15 +49,11 @@ $dto_user->password_hash = md5( 'some secret' );
 
 $dao_user = dbFactory::dbmf()->daoInstance( 'user' );
 
-// 1. Create.
+// 1. Create.  note: $dto_user->user_id will be set here.
 $dao_user->save( $dto_user );
 
-// note: $dto_user->user_id has been set now.
-
-// Now let's modify a column.
-$dto_user->email = 'santaclaus@northpole.com';
-
 // 2. Update.  (It will be an update because PK user_id is specified.)
+$dto_user->email = 'santaclaus@northpole.com';
 $dao_user->save( $dto_user );
 
 // 3. Query the record.
