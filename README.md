@@ -140,27 +140,35 @@ db_extractor.php with appropriate params for accessing your DB, etc.
 
 ## dbFactory
 
-This abstract/static factory class should be provided by your application.
-It is not necessary, but it makes it much more convenient to access the
-database model from anywhere in the code with requiring object instantiation
-or config parameters.
+This is an optional convenience class that serves two purposes:
 
-An example dbFactory class is provided, intended for customization.
+1. A place for DB config parameters.
+2. A static method for accessing the dbModelFactory class so that it does
+not have to be passed around the application or stored in a global location.
 
-This class provides efficient, convenient access to the dbModelFactory via
-a static method.  Most commonly used are:
+The application will most commonly call these three methods:
 
-   // return a DAO.  ( represents a table )
+```
+   // access a DAO instance.  ( represents a table )
    dbFactory::dbmf()->daoInstance($table_name)
    
    // instantiate a new DTO ( represents a table row )
    dbFactory::dbmf()->dtoNew( $table_name )
-   
+
+   // instantiate a new criteria object for select ... where criteria.   
+   dbFactory::dbmf()->daoCriteriaNew()
+```
 
 ## dbModelFactory
 
-This factory class is auto-generated and used internally by dbFactory.  Or it
+This factory class simplifies access to the DAO and DTO objects for each table.
+The class is auto-generated and used internally by dbFactory.  Or it
 can be instantiated manually within your app.
+
+The dbModelFactory class instantiates a PDO object, so it can be inefficient
+to use "new dbModelFactory" all over the place, because each instantiation will
+cause a new database connection to be made.
+
 
 ## Data Access Objects (DAO )
 
@@ -171,10 +179,11 @@ joins or stored proc calls.
 
 The structure looks like:
 
+```
  dao          <---- one file per table.  user extensible.
    /base      <---- one file per table.  do not touch.
    /custom    <---- whatever random queries you like.
-
+```
 
 Any queries that fit into single-table model should be placed directly
 into the appropriate DAO class (db_model/dao).  A query fits into the
@@ -218,54 +227,86 @@ A custom DTO object can easily be instantiated from anywhere by calling:
 
 ### dbModelFactory
 
-This factory class provides a simplified way to access or instantiate DAO and DTO objects.
+This factory class provides a simplified way to access or instantiate DAO and
+DTO objects.
 
-(In PV, this class is not used directly, but rather via a static wrapper, dbFactory.)
+(Often this class is not used directly, but rather via a static wrapper,
+dbFactory.)
 
 ### [table]_dto_base
 
-These abstract classes are automatically generated and should never be manually modified, and cannot be directly instantiated.  They provide a public attribute for each column in a table, and each object can contain data for one DB row.
+These abstract classes are automatically generated and should never be manually
+modified, and cannot be directly instantiated. They provide a public attribute
+for each column in a table, and each object can contain data for one DB row.
 
 ### [table]_dto
 
-These classes are automatically generated and are intended to be manually modified. If the class file already exists, it will be ignored by the generator.  These classes inherit from <table>_dto_base, and it is these wrapper classes that are intended to be instantiated.  
+These classes are automatically generated and are intended to be manually
+modified. If the class file already exists, it will be ignored by the generator.
+These classes inherit from <table>_dto_base, and it is these wrapper classes
+that are intended to be instantiated. 
 
 ### [table]_custom_dto
 
-These classes are not generated. Rather they are intended to be written by hand and placed in the dto/custom directory.  These classes provide a place for custom types that match an SQL query, but do NOT match any table.
+These classes are not generated. Rather they are intended to be written by hand
+and placed in the dto/custom directory. These classes provide a place for custom
+types that match an SQL query, but do NOT match any table.
+
+The use of custom DTOs is discouraged.  In a well designed application
+they are not typically required.
 
 
 ### daoBase
 
-This is a common base class that all dao classes inherit from.  It manages the reference to the Dal db connection and provides some common dao methods.
+This is a common base class that all dao classes inherit from. It manages the
+reference to the Dal db connection and provides some common dao methods.
 
 ### [table]_dao_base
 
-These abstract classes are automatically generated and should never be manually modified, and cannot be directly instantiated.  They provide basic methods for SQL insert, delete, update, and select operations.
+These abstract classes are automatically generated and should never be manually
+modified, and cannot be directly instantiated. They provide basic methods for
+SQL insert, delete, update, and select operations.
 
 ### [table]_dao
 
-These classes are automatically generated and are intended to be manually modified. If the class file already exists, it will be ignored by the generator.  These classes inherit from [table]_dao_base, and it is these wrapper classes that are intended to be instantiated.
+These classes are automatically generated and are intended to be manually
+modified. If the class file already exists, it will be ignored by the generator.
+These classes inherit from [table]_dao_base, and it is these wrapper classes
+that are intended to be instantiated.
 
 ### [table]_custom_dao
 
-These classes are not generated. Rather they are intended to be written by hand and placed in the dao/custom directory.  These classes provide a place for custom dao containing queries that do not fit the single-table model well. examples include calls to stored procedures or queries with complex joins, eg reports.
+These classes are not generated. Rather they are intended to be written by hand
+and placed in the dao/custom directory. These classes provide a place for custom
+dao containing queries that do not fit the single-table model well. examples
+include calls to stored procedures or queries with complex joins, eg reports.
+
+The use of custom DAOs is discouraged.  In a well designed application
+they are not typically required.
 
 ### daoCriteria
 
-This class is used to programatically define SQL clauses including WHERE, ORDER BY, GROUP BY, LIMIT and OFFSET.  In particular, the WHERE clause support is nice, because it provides support for all the major SQL operators and conditionals eg:  or_(), and_(), equals(), greaterthan(), etc.
+This class is used to programatically define SQL clauses including WHERE, ORDER
+BY, GROUP BY, LIMIT and OFFSET. In particular, the WHERE clause support is nice,
+because it provides support for all the major SQL operators and conditionals eg:
+or_(), and_(), equals(), greaterthan(), etc.
 
-The class supports single table queries only.  It does not currently support queries that involve joins.  For this, you might consider defining a view inside the database, or creating a custom query in your [table]_dao class.
+The class supports single table queries only. It does not currently support
+queries that involve joins. For this, you might consider defining a view inside
+the database, or creating a custom query in your [table]_dao class.
 
-The daoCriteria class can be passed to the following methods of every dao object:
+The daoCriteria class can be passed to the following methods of every dao
+object:
 
 * ::getByCriteria()
 * ::updateByCriteria()
 * ::deleteByCriteria()
 
-In the case of update or delete, only the WHERE clause criteria will be used.  In the case of select, all specified criteria are used.
+In the case of update or delete, only the WHERE clause criteria will be used. In
+the case of select, all specified criteria are used.
 
-The recommended way to instantiate daoCriteria is with dbModelFactory()->daoCriteriaNew(), or in PV with dbFactory::daoCriteriaNew().
+The recommended way to instantiate daoCriteria is with
+dbFactory::dbmf()->daoCriteriaNew()
 
 See example below.
 
@@ -275,30 +316,38 @@ See example below.
 
 Implemented in db_crud/server/config/crudSetup.php
 
-The crudSetup.php file is auto-generated by the extractor with the db params used to generated the model. So everything should work out-of-the box after generation.  However, this file should be modified to suit the individual application.  The key requirement is that it must return a useable dbModelFactory object (and corresponding DAL).
+The crudSetup.php file is auto-generated by the extractor with the db params
+used to generated the model. So everything should work out-of-the box after
+generation. However, this file should be modified to suit the individual
+application. The key requirement is that it must return a useable dbModelFactory
+object (and corresponding DAL).
 
-For example, in PV we have modified it to use the already instantiated dbModelFactory and DAL objects.
-
-By default, this file will also look for [http://www.firephp.org/ FirePHP] in its PEAR location, and the crud and the CRUD and DAL layers will use it if available.
+By default, this file will also look for [http://www.firephp.org/ FirePHP] in
+its PEAR location, and the crud and the CRUD and DAL layers will use it if
+available.
 
 
 ### [table]Proc
 
 Implemented in db_crud/server/[table].proc.php.  
 
-These classes implement an ajax processor for a single table.  The classes are intended for re-use and can be used from any top-level controller.
+These classes implement an ajax processor for a single table. The classes are
+intended for re-use and can be used from any top-level controller.
 
 ### [table].ctl.php
 
 Implemented in db_crud/server/[table].ctl.php
 
-These files implement a very simple ajax controller for a single table. These controllers instantiate the appropriate processor class, send utf-8 headers, and not much more.
+These files implement a very simple ajax controller for a single table. These
+controllers instantiate the appropriate processor class, send utf-8 headers, and
+not much more.
 
 ### [table].html
 
 Implemented in db_crud/client/[table].html
 
-These files implement a simple ajax client that displays a jqGrid for a single table.  These files are intended for use as:
+These files implement a simple ajax client that displays a jqGrid for a single
+table. These files are intended for use as:
 
 * simple DB administrative interface for developers.  Note: the db_crud directory should be .htaccess protected in production.
 * templates for creating more interesting user-facing features.  (in a separate directory!)
@@ -314,27 +363,41 @@ database for mysql or postgresql and sample code to query and manipulate it.
 
 ### Joining multiple tables
 
-Perhaps the biggest question that the author of a new dbAdapter may have is: "where do I put queries that join multiple tables?"
+Perhaps the biggest question that the author of a new dbAdapter may have is:
+"where do I put queries that join multiple tables?"
 
 #### Easiest Solution
 
-If you only need read-only access to the query, and performance is not critical, consider adding a mysql view for the query.  Then you can simply re-run the db_extractor and you will have a full set of classes (even jqGrid UI) for the query.  You just won't be able to update it.
+If you only need read-only access to the query, and performance is not critical,
+consider adding a mysql view for the query. Then you can simply re-run the
+db_extractor and you will have a full set of classes (even jqGrid UI) for the
+query. You just won't be able to update it.
 
-Just be aware that mysql's view implementation is pretty inefficient and you will likely have lousy performance for any complex joins.  Check the mysql manual about views.
+Just be aware that mysql's view implementation is pretty inefficient and you
+will likely have lousy performance for any complex joins. Check the mysql manual
+about views.
 
 #### Manual Solution
 
-If the query is *MOSTLY* about a single table, then put it in the DAO for that table. But be sure to create a custom DTO for the results.  Otherwise, create a custom DAO and a custom DTO.
+If the query is *MOSTLY* about a single table, then put it in the DAO for that
+table. But be sure to create a custom DTO for the results. Otherwise, create a
+custom DAO and a custom DTO.
 
-For example, when working with Creatives, I may need to return information from Adgroup, Campaign, and Product tables.  But the bulk of the information is still about a Creative.  so it goes in the creative DAO.
+For example, when working with Creatives, I may need to return information from
+Adgroup, Campaign, and Product tables. But the bulk of the information is still
+about a Creative. so it goes in the creative DAO.
 
-If there is a many-to-many join, then there may already be an intermediate table that represents the relationship, so the query could go there.
+If there is a many-to-many join, then there may already be an intermediate table
+that represents the relationship, so the query could go there.
 
-Also keep in mind that it is easy for a particular application controller to mix and match multiple DB adapters.  So there's no need to group unrelated queries together into the same DAO.
+Also keep in mind that it is easy for a particular application controller to mix
+and match multiple DB adapters. So there's no need to group unrelated queries
+together into the same DAO.
 
 ### Bulding new features that use the CRUD files
 
-When building a new feature, it would be nice to re-use the CRUD processor(s).  But where do the HTML file and controller go?
+When building a new feature, it would be nice to re-use the CRUD processor(s).
+But where do the HTML file and controller go?
 
 #### Answer
 
