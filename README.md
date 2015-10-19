@@ -101,8 +101,8 @@ db_extractor.php with appropriate params for accessing your DB, etc.
    Options:
    
    -h HOST            hostname of machine running db.     default = localhost
-   -u USER            db username                         default = searchrev
-   -p PASS            db password                         default = password
+   -u USER            db username
+   -p PASS            db password
    
    -a dbtype          mysql | postgres                    default = postgres
 
